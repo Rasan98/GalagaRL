@@ -1,5 +1,6 @@
 buttons = joypad.get(1)
 filename = "pass_data.txt"
+mod_time = ""
 
 -------Memory Addresses---------
 
@@ -13,20 +14,12 @@ SCORE5 = 0x00e5
 SCORE6 = 0x00e6
 
 -------------------------------]]
+
 function get_mod_time()
     local file = io.popen("forfiles /M pass_data.txt /C \"cmd /c echo @fdate @ftime\" ")
     local output = file:read('*all')
     file:close()
     return output
-end
-
-function learning_mode()
-    emu.speedmode("maximum")
-    while(true)
-    do
-        emu.frameadvance()
-        print(emu.framecount())
-    end    
 end
 
 function setbuttons(str)
@@ -51,64 +44,23 @@ function setbuttons(str)
 end
 
 function getScore()
-    millions = memory.readbyte(SCORE0) * 1000000
-    hundred_thousands = memory.readbyte(SCORE1) * 100000
-    ten_tousands = memory.readbyte(SCORE2) * 10000
-    thousands = memory.readbyte(SCORE3) * 1000
-    hundreds = memory.readbyte(SCORE4)  * 100
-    tens = memory.readbyte(SCORE5) * 10
-    ones = memory.readbyte(SCORE6)
+    local millions = memory.readbyte(SCORE0) * 1000000
+    local hundred_thousands = memory.readbyte(SCORE1) * 100000
+    local ten_tousands = memory.readbyte(SCORE2) * 10000
+    local thousands = memory.readbyte(SCORE3) * 1000
+    local hundreds = memory.readbyte(SCORE4)  * 100
+    local tens = memory.readbyte(SCORE5) * 10
+    local ones = memory.readbyte(SCORE6)
     return ones + tens + hundreds + thousands + ten_tousands + hundred_thousands + millions;
 end
 
-if(arg == "test") then
-    local file = io.popen("forfiles /M pass_data.txt /C \"cmd /c echo @fdate @ftime\" ")
-    local output = file:read('*all')
-    file:close()
-    print(output)
-    return
-end
-
-if(arg == "pause") then
-    emu.pause()
-    return
-end
-
-if(arg == "unpause") then 
-    emu.unpause()
-    return
-end
-
-if(arg == "lm") then
-    learning_mode()
-    return
-end
-
-if(arg == "sc") then
-    gui.savescreenshotas("hola.png")
-    return
-end
-
-if(arg == "10st") then
-    emu.unpause()
+function init()
     emu.speedmode("maximum")
     for i = 10, 1, -1
     do
         emu.frameadvance()
     end
-    emu.speedmode("normal")
-    emu.pause()
-    return
-end
-
-if(arg == "ini") then
-
-    emu.speedmode("maximum")
-    for i = 10, 1, -1
-    do
-        emu.frameadvance()
-    end
-    start = joypad.get(1)
+    local start = joypad.get(1)
     start["start"] = true
     joypad.set(1, start)
     
@@ -123,34 +75,53 @@ if(arg == "ini") then
     do
         emu.frameadvance()
     end
-
-    emu.speedmode("normal")
-    return
 end
 
-if(arg == "data") then
-    print(memory.readbyte(LIVES))
-    print(getScore())
-    return
-end
-
-if(arg == "talk") then
-    file = io.open(filename, "w")
+function send_status()
+    local lives = memory.readbyte(LIVES)
+    local score = getScore()
+    local message = tostring(lives) .. " " .. tostring(score)
+    gui.savescreenshotas("current_state.png")
+    
+    local file = io.open(filename, "w")
     io.output(file)
-    io.write("3 2000")
+    io.write(message)
     io.close(file)
     mod_time = get_mod_time()
-    
-    while(mod_time ~= get_mod_time()) do
-    end
-
-    file = io.open(filename, "r")
-    io.input(file)
-    move = io.read()
-    --apply move to simulator
-    --get actual status
-    print(move)
-    return
 end
 
-print("Command not exist")
+function receive_move()
+    
+    while(mod_time == get_mod_time()) do
+    end
+
+    local file = io.open(filename, "r")
+    io.input(file)
+    local move = io.read()
+    io.close()
+    mod_time = get_mod_time()
+    return move
+end
+
+function send_exit()
+    local file = io.open(filename, "w")
+    io.output(file)
+    io.write("exit")
+    io.close(file)
+end
+
+init()
+emu.pause()
+i = 50
+while(i != 0) 
+do
+    send_status()
+    move = receive_move()
+    setbuttons(move)
+    emu.unpause()
+    emu.frameadvance()
+    emu.pause()
+end
+
+send_exit()
+
