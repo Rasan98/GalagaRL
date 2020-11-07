@@ -1,7 +1,5 @@
-require "luafilesystem"
-
-
 buttons = joypad.get(1)
+filename = "pass_data.txt"
 
 -------Memory Addresses---------
 
@@ -15,6 +13,13 @@ SCORE5 = 0x00e5
 SCORE6 = 0x00e6
 
 -------------------------------]]
+function get_mod_time()
+    local file = io.popen("forfiles /M pass_data.txt /C \"cmd /c echo @fdate @ftime\" ")
+    local output = file:read('*all')
+    file:close()
+    return output
+end
+
 function learning_mode()
     emu.speedmode("maximum")
     while(true)
@@ -57,9 +62,10 @@ function getScore()
 end
 
 if(arg == "test") then
-    print()
-    print(string.sub("010", 2, 2))
-    print(string.sub("010", 3, 3))
+    local file = io.popen("forfiles /M pass_data.txt /C \"cmd /c echo @fdate @ftime\" ")
+    local output = file:read('*all')
+    file:close()
+    print(output)
     return
 end
 
@@ -125,6 +131,25 @@ end
 if(arg == "data") then
     print(memory.readbyte(LIVES))
     print(getScore())
+    return
+end
+
+if(arg == "talk") then
+    file = io.open(filename, "w")
+    io.output(file)
+    io.write("3 2000")
+    io.close(file)
+    mod_time = get_mod_time()
+    
+    while(mod_time ~= get_mod_time()) do
+    end
+
+    file = io.open(filename, "r")
+    io.input(file)
+    move = io.read()
+    --apply move to simulator
+    --get actual status
+    print(move)
     return
 end
 
