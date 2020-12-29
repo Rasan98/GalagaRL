@@ -61,6 +61,29 @@ function getScore()
     return ones + tens + hundreds + thousands + ten_tousands + hundred_thousands + millions;
 end
 
+function init()
+    emu.speedmode("maximum")
+    for i = 10, 1, -1
+    do
+        emu.frameadvance()
+    end
+    local start = joypad.get(1)
+    start["start"] = true
+    joypad.set(1, start)
+    
+    for i = 10, 1, -1
+    do
+        emu.frameadvance()
+    end
+    
+    joypad.set(1, start)
+
+    for i = 680, 1, -1
+    do
+        emu.frameadvance()
+    end
+end
+
 if(arg == "test") then
     local file = io.popen("forfiles /M pass_data.txt /C \"cmd /c echo @fdate @ftime\" ")
     local output = file:read('*all')
@@ -134,6 +157,13 @@ if(arg == "data") then
     return
 end
 
+if(arg == "lives") then
+    if(memory.readbyte(LIVES) == 0) then
+        print("NICE")
+    end
+    return
+end
+
 if(arg == "talk") then
     file = io.open(filename, "w")
     io.output(file)
@@ -153,5 +183,14 @@ if(arg == "talk") then
     print(move)
     return
 end
+
+if(arg == "reset") then
+    emu.softreset()
+    emu.unpause()
+    init()
+    emu.pause()
+    return
+end
+
 
 print("Command not exist")

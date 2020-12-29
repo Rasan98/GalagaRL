@@ -23,19 +23,19 @@ function get_mod_time()
 end
 
 function setbuttons(str)
-    if(string.sub("010", 1, 1) == "1") then
+    if(string.sub(str, 1, 1) == "1") then
         buttons["left"] = true
     else
         buttons["left"] = false
     end
     
-    if(string.sub("010", 2, 2) == "1") then
+    if(string.sub(str, 2, 2) == "1") then
         buttons["right"] = true
     else
         buttons["right"] = false
     end
     
-    if(string.sub("010", 2, 2) == "1") then
+    if(string.sub(str, 2, 2) == "1") then
         buttons["A"] = true
     else
         buttons["A"] = false
@@ -71,14 +71,13 @@ function init()
     
     joypad.set(1, start)
 
-    for i = 650, 1, -1
+    for i = 680, 1, -1
     do
         emu.frameadvance()
     end
 end
 
-function send_status()
-    local lives = memory.readbyte(LIVES)
+function send_status(lives)
     local score = getScore()
     local message = tostring(lives) .. " " .. tostring(score)
     gui.savescreenshotas("current_state.png")
@@ -103,7 +102,7 @@ function receive_move()
     return move
 end
 
-function send_exit()
+function send_restart()
     local file = io.open(filename, "w")
     io.output(file)
     io.write("exit")
@@ -112,9 +111,16 @@ end
 
 init()
 emu.pause()
-i = 50
-while(i != 0) 
+while(true) 
 do
+    lives = memory.readbyte(LIVES)
+    if(lives == 0) then
+        send_restart()
+        emu.softreset()
+        emu.unpause()
+        init()
+        emu.pause()
+    end
     send_status()
     move = receive_move()
     setbuttons(move)
@@ -122,6 +128,4 @@ do
     emu.frameadvance()
     emu.pause()
 end
-
-send_exit()
 
